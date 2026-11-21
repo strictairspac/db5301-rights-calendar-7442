@@ -1,0 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC&family=Noto+Sans+SC&display=swap');
+:root {
+  --title-font: "Noto Serif SC"; --body-font: "Noto Sans SC";
+  --paper: oklch(.982 .012 268); --sheet: oklch(.996 .005 268); --ink: oklch(.225 .032 268);
+  --soft: oklch(.938 .031 268); --line: oklch(.837 .036 268); --muted: oklch(.43 .047 268);
+  --accent: oklch(.455 .085 268); --accent-dark: oklch(.354 .085 268);
+  --hero: oklch(.305 .085 268); --hero-text: oklch(.979 .018 268);
+  --button-text: oklch(.984 .012 268); --radius: 0px; --rule: 3px;
+  --navigation: 12.8rem; --login-columns: 1.42fr 1fr;
+}
