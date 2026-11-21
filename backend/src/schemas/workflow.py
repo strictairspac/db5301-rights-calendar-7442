@@ -15,3 +15,13 @@ class CaseForm(BaseModel):
 
 class ReviewForm(BaseModel):
     note: str = Field(min_length=1, max_length=500)
+
+
+class BookingForm(BaseModel):
+    reference: str = Field(min_length=1, max_length=120)
+    starts_at: str = Field(min_length=1, max_length=32)
+    ends_at: str = Field(min_length=1, max_length=32)
+
+
+class DraftForm(BaseModel):
+    draft: dict[str, Any]

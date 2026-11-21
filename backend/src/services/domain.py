@@ -1,20 +1,83 @@
 """Rights review and release decisions for 潮幕影展."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta, timezone
 from json import dumps
-import re
 
 from sqlalchemy import text
 
+from ..utils.time import parse_timestamp
 from .rights_sql import ANALYZE_SCREENINGS
 
 
 DESK_TIMEZONE = timezone(timedelta(hours=8))
 SCOPE_FIELDS = ("film_id", "territory", "medium")
-TIMESTAMP = re.compile(
-    r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}(?::00)?"
-    r"(?:Z|[+-](?:[01][0-9]|2[0-3]):[0-5][0-9])"
-)
+
+PROGRAMME = {
+    "name": "影厅节目单整批改版",
+    "summary": (
+        "整批替换一座影厅的节目单：场次可保留原档或在顺延上限内后移，"
+        "避开已确认的包场，整场有授权且互不重叠，尽量多排。"
+    ),
+    "field_labels": {
+        "note": "改版说明",
+        "max_delay_minutes": "最多顺延分钟",
+        "screenings": "草案场次",
+        "rights": "已生效授权窗口",
+        "screening_id": "场次编号",
+        "right_id": "授权编号",
+        "film_id": "影片编号",
+        "title": "片名",
+        "territory": "地域",
+        "medium": "媒介",
+        "starts_at": "开始时间",
+        "ends_at": "结束时间",
+    },
+    "guidance": (
+        "草案按整座影厅提交。场次可保留原定开场，或在「最多顺延分钟」内后移；"
+        "每场须完整落在同影片、地域、媒介的授权窗口内，并避开已确认的包场，"
+        "各场之间不得重叠。试排给出排入与未排上的场次，发布时整份节目单一次性切换。"
+    ),
+    "sample": {
+        "note": "12 月 4 日整厅改版",
+        "max_delay_minutes": 45,
+        "screenings": [
+            dict(screening_id="P-201", film_id="F-01", title="潮线以北", territory="上海",
+                 medium="影院", starts_at="2026-12-04T19:00+08:00", ends_at="2026-12-04T20:30+08:00"),
+            dict(screening_id="P-202", film_id="F-02", title="雾港来信", territory="上海",
+                 medium="影院", starts_at="2026-12-04T20:30+08:00", ends_at="2026-12-04T21:30+08:00"),
+            dict(screening_id="P-203", film_id="F-03", title="白鹭返航", territory="上海",
+                 medium="影院", starts_at="2026-12-04T21:00+08:00", ends_at="2026-12-04T22:00+08:00"),
+            dict(screening_id="P-204", film_id="F-04", title="夜潮档案", territory="上海",
+                 medium="影院", starts_at="2026-12-04T22:00+08:00", ends_at="2026-12-04T23:00+08:00"),
+        ],
+        "rights": [
+            dict(right_id="R-11", film_id="F-01", territory="上海", medium="影院",
+                 starts_at="2026-12-04T18:00+08:00", ends_at="2026-12-04T20:30+08:00"),
+            dict(right_id="R-12", film_id="F-02", territory="上海", medium="影院",
+                 starts_at="2026-12-04T20:00+08:00", ends_at="2026-12-04T22:00+08:00"),
+            dict(right_id="R-13", film_id="F-03", territory="*", medium="影院",
+                 starts_at="2026-12-04T20:00+08:00", ends_at="2026-12-04T23:00+08:00"),
+        ],
+    },
+    "sample_booking": {
+        "reference": "品牌点映包场",
+        "starts_at": "2026-12-05T19:00+08:00",
+        "ends_at": "2026-12-05T20:00+08:00",
+    },
+    "seed_booking": {
+        "reference": "设备检修包场",
+        "starts_at": "2026-12-04T20:35+08:00",
+        "ends_at": "2026-12-04T20:45+08:00",
+    },
+    "seed_programme": [
+        dict(screening_id="S-001", film_id="F-01", title="潮线以北", territory="上海",
+             medium="影院", starts_at="2026-12-04T18:00+08:00", ends_at="2026-12-04T19:30+08:00"),
+        dict(screening_id="S-002", film_id="F-02", title="雾港来信", territory="上海",
+             medium="影院", starts_at="2026-12-04T19:40+08:00", ends_at="2026-12-04T20:30+08:00"),
+        dict(screening_id="S-003", film_id="F-03", title="白鹭返航", territory="上海",
+             medium="影院", starts_at="2026-12-04T22:30+08:00", ends_at="2026-12-04T23:30+08:00"),
+    ],
+}
 
 SPEC = {
     "name": "潮幕影展·放映授权排期",
@@ -83,14 +146,7 @@ SPEC = {
 
 
 def _parse_time(value, label):
-    if not isinstance(value, str) or not TIMESTAMP.fullmatch(value):
-        raise ValueError(f"{label}须使用带时区的 ISO 8601 整分钟")
-    try:
-        utc_time = datetime.fromisoformat(value).astimezone(timezone.utc)
-        utc_time.astimezone(DESK_TIMEZONE)
-    except (ValueError, OverflowError) as error:
-        raise ValueError(f"{label}的日期、时间或时区超出有效范围") from error
-    return utc_time
+    return parse_timestamp(value, label)
 
 
 def _read_rows(payload, key, id_field, extra_fields=()):

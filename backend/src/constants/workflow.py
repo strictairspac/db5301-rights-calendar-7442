@@ -12,3 +12,14 @@ class Status(StrEnum):
     RUNNING = 'running'
     COMPLETE = 'complete'
     FAILED = 'failed'
+
+
+class BookingStatus(StrEnum):
+    CONFIRMED = 'confirmed'
+    CANCELLED = 'cancelled'
+
+
+class ProgrammeStatus(StrEnum):
+    PUBLISHED = 'published'
+    SUPERSEDED = 'superseded'
+
